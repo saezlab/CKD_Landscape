@@ -1,3 +1,7 @@
+#Data inspection, differential expression analysis and p-value aggregation
+
+
+
 rm(list = ls())
 library(scater)
 library(scran)
