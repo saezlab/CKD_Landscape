@@ -1,4 +1,8 @@
 
+#TF Acivity Estimation by DoROthEA (https://www.ncbi.nlm.nih.gov/pubmed/29229604). 
+
+
+
 load("ckd_glom_sepMat.RData") #created in Process_All_Glom.r   Part --> #########Separating the Conditions into distinct objects###################
 
 ckd_glom = list(FSGS_Glom, FSGS_MCD_Glom, MCD_Glom, IgAN_Glom, LN_Glom, MGN_Glom,
