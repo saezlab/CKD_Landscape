@@ -1,3 +1,6 @@
+#Batch Effect Mitigation of Data generated of GPL570
+
+
 rm(list = ls())
 library(scater)
 library(scran)
