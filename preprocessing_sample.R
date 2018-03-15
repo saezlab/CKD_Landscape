@@ -1,4 +1,7 @@
 
+#Sample script of the preprocessing steps. For detailed description --> Methods of https://www.biorxiv.org/content/early/2018/02/14/265447
+
+
 #######################################################
 library(GEOquery)
 getGEOSuppFiles("GSE32591")
