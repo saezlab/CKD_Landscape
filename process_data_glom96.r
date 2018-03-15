@@ -1,3 +1,6 @@
+#Batch Effect mitigation of data generated on GPL96
+
+
 rm(list = ls())
 library(scater)
 library(scran)
