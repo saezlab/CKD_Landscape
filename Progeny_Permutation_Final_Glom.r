@@ -1,3 +1,23 @@
+#I. Aim of this script:
+#We aim to get insight into a pathway's influence in 
+#a certain disease entity. We can get a simulated empirical distribution by generating 10000 resampled PROGENy matricies.
+#The key step is shuffling the original gene expression values (standardised over the sd of tumor nephrectomy), hence randomly allocating different expression values to different disease subtypes. This way the original distribution stays the same, but the values are randomly assigned. We then multiply this 1000 series of gene expression matrices with the PROGENy model matrix and attain one single PROGENY score/pathway in a disease (we have that 1000x).
+#Mapping the original PROGENy score/Pathway/Disease onto the generated ECDF,
+#we would be able to infer the probability of the score being located within or out of range under the distribution curve.
+#This way we can obtain a p-value indicating a  significance of the pathway in that particular disease.
+
+#Steps:
+ #We merge all the accessions of all the disease subtypes into one single matrix. We do this separately for the different tissues. 
+ #We shuffle the coloumns in a way that different expression values are assigned to different disease labels. It is done by 10000 times. So, we have 1000 matrices containing random expression values (based on the real expression values). 
+ #We average the accessions taking into account the number of replicates/disease subtype. #function Newfun.
+ #Run PROGENy model matrix on all the newly created random matricies.
+ #Compute ECDF pathway-specifically
+ #Compute Pathway-Specific P-values
+ #pval = 1 - pathway_spec_ecdf(the ##real## progeny score you want to test) #this formula for positive PROGENy scores
+ #pval = pathway_spec_ecdf(the ##real## progeny score you want to test)    #this formula for negative PROGENy scores
+ #FDR-adjustment (BH) of p-values
+ #Visualisation
+
 rm(list = ls())
 
 
