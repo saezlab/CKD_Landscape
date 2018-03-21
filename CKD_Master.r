@@ -1,13 +1,16 @@
-#This method originates from : http://bioinformatics.knowledgeblog.org/2011/06/20/analysing-microarray-data-in-bioconductor/
-#The following script is constituting the steps involved in the preprocessing analysis conducted
-# on the public CKD data. Steps: downloading the raw data; quality control assessment; platform-specific merging of the data
-#This preproccessing was done for each data set separately. 
+			  ####Full and ordered script of the integrated CKD microarray data#########
+
+
 #Data sets with GEO numbers:
 #Glomerular data: GSE20602; GSE32591; GSE37460; GSE47183; GSE50469
 #Tubular data: GSE32591; GSE35487; GSE35488; GSE37455; GSE47184; GSE69438
 
 
 #1.Downloading and quality control assessment of the data sets.
+#This method originates from : http://bioinformatics.knowledgeblog.org/2011/06/20/analysing-microarray-data-in-bioconductor/
+#The following script is constituting the steps involved in the preprocessing analysis conducted
+# on the public CKD data. Steps: downloading the raw data; quality control assessment; platform-specific merging of the data
+#This preproccessing was done for each data set separately. 
 #A simpler version of the script can be found in preprocessing_sample.R
 #Experiment: GSE93798
 #Platform: GPL570
