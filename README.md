@@ -26,3 +26,38 @@ The corresponding article for this project is available on [bioRxiv (pdf)](https
     <img src="https://github.com/saezlab/CKD_Landscape/blob/master/Plot/Analysis_workflow.png" width="900" height="300">
 </p>
 
+
+### Batch effect mitigation and platform integration 
+
+Setting 1: **bachMitigationGPL96.R**
+Setting 2: **bachMitigationGPL570.R**
+Setting 3: **platformIntegration.R**
+
+### Differential expression and meta analysis 
+
+Setting 4: **differentialAnalysis.R**
+
+### Pathway analysis with PROGENy
+
+Setting 5: **progenyPathwayAnalysis.R**
+
+### Transcription Factor activity analysis with DoRothEA
+
+Setting 6: **transcriptionFactorsDorothea.R**
+
+### Diffusion Map 
+
+Setting 7: **DiffusionMap.R**
+
+
+### License
+
+Distributed under the GNU GPLv3 License. See accompanying file LICENSE.txt or copy at http://www.gnu.org/licenses/gpl-3.0.html.
+
+
+
+
+
+
+
+
