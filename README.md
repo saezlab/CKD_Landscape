@@ -56,6 +56,20 @@ The corresponding article for this project is available on [bioRxiv (pdf)](https
 </p>
 For colour coding refer to the [bioRxiv (pdf)](https://www.biorxiv.org/content/biorxiv/early/2018/02/14/265447.full.pdf) Figure 2B
 
+## Drug repositioning
+
+Drug repositioning has two main part, first is to get characteristics direction and second, to find drug candidates for each CKD entity. 
+
+* First, in order to get the characteristic direction (the signature of cosine distances) for each CKD entity 
+we used the normalised gene expression values and then we measured the signature of cosine distances 
+with the open source code from [Implementations of the Characteristic Direction Method](http://maayanlab.net/CD/)
+
+* Second, to identify drug candidates from drug repositioning,
+we utilized the signature of cosine distances from the first step as an input data and 
+applied them to the search engine [L1000 Characteristic Direction Signature Search Engine](http://amp.pharm.mssm.edu/L1000CDS2/#/index)
+
+The above steps were repeated for each CKD entity, separately. 
+
 
 ## License
 
