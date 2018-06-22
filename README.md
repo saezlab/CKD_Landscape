@@ -27,7 +27,8 @@ The corresponding article for this project is available on [bioRxiv (pdf)](https
 </p>
 
 
-### Batch effect mitigation and platform integration 
+
+## Batch effect mitigation and platform integration 
 
 Setting 1: **bachMitigationGPL96.R**
 Setting 2: **bachMitigationGPL570.R**
@@ -50,7 +51,7 @@ Setting 6: **transcriptionFactorsDorothea.R**
 Setting 7: **DiffusionMap.R**
 
 
-### License
+## License
 
 Distributed under the GNU GPLv3 License. See accompanying file LICENSE.txt or copy at http://www.gnu.org/licenses/gpl-3.0.html.
 
