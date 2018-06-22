@@ -23,6 +23,6 @@ The corresponding article for this project is available on [bioRxiv (pdf)](https
 
 <p align="center">
     Samples grouped by platform
-    <img src="https://github.com/saezlab/CKD_Landscape/blob/master/Plot/Analysis_workflow.png" width="700" height="700">
+    <img src="https://github.com/saezlab/CKD_Landscape/blob/master/Plot/Analysis_workflow.png" width="1100" height="700">
 </p>
 
