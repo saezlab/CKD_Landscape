@@ -30,9 +30,9 @@ The corresponding article for this project is available on [bioRxiv (pdf)](https
 
 ## Batch effect mitigation and platform integration 
 
-Setting 1: **bachMitigationGPL96.R**
-Setting 2: **bachMitigationGPL570.R**
-Setting 3: **platformIntegration.R**
+* Setting 1: **bachMitigationGPL96.R**
+* Setting 2: **bachMitigationGPL570.R**
+* Setting 3: **platformIntegration.R**
 
 ## Differential expression and meta analysis 
 
@@ -54,7 +54,7 @@ Setting 7: **DiffusionMap.R**
     Similarity Landscape of CKD entities 
     <img src="https://github.com/saezlab/CKD_Landscape/blob/master/Plot/diffusion_gex_glom.png" width="700" height="700">
 </p>
-*For colour coding refer to the [bioRxiv (pdf)](https://www.biorxiv.org/content/biorxiv/early/2018/02/14/265447.full.pdf) Figure 2B*
+For colour coding refer to the [bioRxiv (pdf)](https://www.biorxiv.org/content/biorxiv/early/2018/02/14/265447.full.pdf) Figure 2B
 
 
 ## License
