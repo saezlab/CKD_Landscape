@@ -51,10 +51,10 @@ Setting 6: **transcriptionFactorsDorothea.R**
 Setting 7: **DiffusionMap.R**
 
 <p align="center">
-    Diffusion map of CKD entities reveals the underpinning geometric structure of the glomerular CKD transcriptomics data.
+    Similarity Landscape of CKD entities 
     <img src="https://github.com/saezlab/CKD_Landscape/blob/master/Plot/diffusion_gex_glom.png" width="700" height="700">
 </p>
-
+*For colour coding refer to the [bioRxiv (pdf)](https://www.biorxiv.org/content/biorxiv/early/2018/02/14/265447.full.pdf) Figure 2B*
 
 
 ## License
