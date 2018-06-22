@@ -36,19 +36,19 @@ The corresponding article for this project is available on [bioRxiv (pdf)](https
 
 ## Differential expression and meta analysis 
 
-Setting 4: **differentialAnalysis.R**
+* Setting 4: **differentialAnalysis.R**
 
 ## Pathway analysis with PROGENy
 
-Setting 5: **progenyPathwayAnalysis.R**
+* Setting 5: **progenyPathwayAnalysis.R**
 
 ## Transcription Factor activity analysis with DoRothEA
 
-Setting 6: **transcriptionFactorsDorothea.R**
+* Setting 6: **transcriptionFactorsDorothea.R**
 
 ## Diffusion Map 
 
-Setting 7: **DiffusionMap.R**
+* Setting 7: **DiffusionMap.R**
 
 <p align="center">
     Similarity Landscape of CKD entities 
