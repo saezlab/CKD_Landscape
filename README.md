@@ -34,19 +34,19 @@ Setting 1: **bachMitigationGPL96.R**
 Setting 2: **bachMitigationGPL570.R**
 Setting 3: **platformIntegration.R**
 
-### Differential expression and meta analysis 
+## Differential expression and meta analysis 
 
 Setting 4: **differentialAnalysis.R**
 
-### Pathway analysis with PROGENy
+## Pathway analysis with PROGENy
 
 Setting 5: **progenyPathwayAnalysis.R**
 
-### Transcription Factor activity analysis with DoRothEA
+## Transcription Factor activity analysis with DoRothEA
 
 Setting 6: **transcriptionFactorsDorothea.R**
 
-### Diffusion Map 
+## Diffusion Map 
 
 Setting 7: **DiffusionMap.R**
 
