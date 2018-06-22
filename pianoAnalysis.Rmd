@@ -1,0 +1,415 @@
+---
+title: "Differential Expression and Gene Set Analysis with Piano"
+author: "Asier Antoranz"
+date: "12/12/2017"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, cache = FALSE, fig.align = 'center')
+```
+
+## Introduction
+
+The aim of the script is to run piano with a specific configuration and in a specific dataset. Gene-Level Statistics (GLSs) werecalculated ussing the LIMMA algorithm. The GLSs of interest are: Fold Change (FC), P-Values (PVal), and T-Statistic (T-Stat). LIMMA first fits a linear model for each gene and then, given these linear models, computes the estimated coefficients and standard errors for a given set of contrasts. Finally, computes differential expression using Empirical Bayes Statistics.
+
+```{r LoadSamples}
+
+library(tidyverse)
+library(ggrepel)
+library(ggthemes)
+library(viridis)
+library(cowplot)
+
+wd <- file.path(getwd())
+dir.create("Results")
+dir.create("Results/Pianoresults")
+
+```
+
+## Gene Set Analysis (GSA)
+
+Diseases are rarely originated due to alterations in individual genes/proteins. We are not only interested in big changes in individual TFs, but also in relatively small changes in functionally correlated TFs. The objective is to gain functional insights about the disease and its mechanisms. GSA helps understanding the underlying mechanims of the disease.
+
+```{r LoadGeneSets}
+
+library(GSEABase)
+
+#Load the KnowledgeBase
+genesets = getGmt(con = file.path(wd, 'Data', 'c2.cp.v5.2.symbols.gmt'))
+genesets = unlist(genesets)
+
+gene_to_term <- data.frame(NA,NA)
+names(gene_to_term) <- c("gene","term")
+
+for (geneset in genesets){
+  temp <- geneIds(geneset)
+  temp2 <- setName(geneset)
+  temp3 <- as.data.frame(cbind(temp,rep(temp2,length(temp))))
+  names(temp3) <- c("gene","term")
+  gene_to_term <- rbind(gene_to_term,temp3)
+}
+
+head(gene_to_term)
+
+library(piano)
+
+geneSet <- loadGSC(gene_to_term)
+
+```
+
+We will run [piano](https://bioconductor.org/packages/release/bioc/html/piano.html), a method (R package piano) that performs several GSA methods and then consensuates the different results. The justification for this is that there is not a GSA method clearly better than the rest.
+
+Piano needs a template where the individual genes are mapped to sets. The template selected for this study was the [MSigDB-CuratedPathways-CanonicalPathways](http://software.broadinstitute.org/gsea/msigdb/collections.jsp#C2) knowledge base. This knowledge base is represented by a bipartite graph mapping individual genes to functional sets (terms).
+
+With the GLSs and the knowledge base, we already have the two inputs necessary to run any piano GSA method. For each contrast, 10 GSA methods were run:
+
+* Fisher (PVal)
+* Stouffer (PVal)
+* Reporter (PVal)
+* PAGE (TVal)
+* Tail Strength (PVal)
+* GSEA (TVal)
+* Mean (FC)
+* Median (FC)
+* Sum (FC)
+* MaxMean (TVal)
+
+For each GSA run (method) and pathway, 5 p-value classes are obtained:
+
+* Distinct-up: Up-regulation (up and down are cancelled out).
+* Mixed-up: Up-regulation (up and down are not cancelled out, a pathway can be mixed-up and mixed-down regulated at the same time).
+* Non-Directional: Differentially regulated (regardless the sign).
+* Mixed-down: Down-regulation (up and down are not cancelled out).
+* Distinct-down: Down-regulation (up and down are cancelled out).
+
+For each run, 5 ranked list are generated (one for each p-value type). The 10 runs are integrated into a single group of 5 ranked lists by averaging the rankings (or the p-values) of the individual runs. For the rankings, arithmetic mean is calculated, for the p-values, geometrical mean is selected.
+
+```{r RunPiano, eval = FALSE}
+
+files <- list.files(path = file.path(wd, 'RDS_folder'), pattern = '.rds$')
+df_pathways <- data.frame()
+
+for(i in files){
+  
+  print(i)
+  gls <- readRDS(file = file.path(wd, 'RDS_folder', i)) 
+  gls$TF <- rownames(gls)
+  gls <- gls %>% mutate(logP = -log10(adj.P.Val))
+  print(head(gls))
+  
+  #Define the GLS
+  myFC <- gls$logFC
+  names(myFC) <- toupper(gls$TF)
+  
+  myPval <- gls$adj.P.Val
+  names(myPval) <- toupper(gls$TF)
+  
+  myTval <- gls$t
+  names(myTval) <- toupper(gls$TF)
+  
+  ###Run the GSA
+  gsaRes1 <- runGSA(geneLevelStats = myPval, directions = myFC, gsc = geneSet, geneSetStat = 'fisher')
+  gsaRes2 <- runGSA(geneLevelStats = myPval, directions = myFC, gsc = geneSet, geneSetStat = 'stouffer')
+  gsaRes3 <- runGSA(geneLevelStats = myPval, directions = myFC, gsc = geneSet, geneSetStat = 'reporter')
+  gsaRes4 <- runGSA(geneLevelStats = myTval, gsc = geneSet, geneSetStat = 'page')
+  gsaRes5 <- runGSA(geneLevelStats = myPval, directions = myFC, gsc = geneSet, geneSetStat = 'tailStrength')
+  #gsaRes11 <- runGSA(geneLevelStats = myFC, gsc = geneSet, geneSetStat = 'wilcoxon')
+  gsaRes6 <- runGSA(geneLevelStats = myTval, gsc = geneSet, geneSetStat = 'gsea')
+  gsaRes7 <- runGSA(geneLevelStats = myFC, gsc = geneSet, geneSetStat = 'mean')
+  gsaRes8 <- runGSA(geneLevelStats = myFC, gsc = geneSet, geneSetStat = 'median')
+  gsaRes9 <- runGSA(geneLevelStats = myFC, gsc = geneSet, geneSetStat = 'sum')
+  gsaRes10 <- runGSA(geneLevelStats = myTval, gsc = geneSet, geneSetStat = 'maxmean')
+  
+  resList <- list(gsaRes1,gsaRes2,gsaRes3,gsaRes4,gsaRes5,gsaRes6,gsaRes7,gsaRes8,gsaRes9,gsaRes10)
+  names(resList) <- c('fisher', 'stoufer', 'reporter', 'page', 'tailStrength', 'gsea', 'mean', 'median', 'sum', 'maxmean')
+  
+  saveRDS(resList, file = file.path(wd, 'Results', 'PianoResults', paste0('GSA_', i)))
+  
+}
+
+```
+
+```{r DataProcessing}
+
+files <- list.files(path = file.path(wd, 'RDS_folder'), pattern = '.rds$')
+df_pathways <- data.frame()
+df_gls <- data.frame()
+
+for(i in files){
+  
+  tmp_gls <- readRDS(file = file.path(wd, 'RDS_folder', i)) 
+  tmp_gls$TF <- rownames(tmp_gls)
+  tmp_gls <- tmp_gls %>% mutate(logP = -log10(adj.P.Val))
+  
+  resList <- readRDS(file = file.path(wd, 'Results', 'PianoResults', paste0('GSA_', i)))
+  
+  summary_df <- lapply(names(resList), function(x)
+    GSAsummaryTable(resList[[x]], save = FALSE))
+  
+  names(summary_df) <- names(resList)
+  
+  df_all <- bind_rows(summary_df, .id = "uid") %>% 
+    rename_('Method' = 'uid')
+  
+  df_p <- df_all %>% 
+    dplyr::select(Method, Name, starts_with('p adj')) %>% 
+    dplyr::rename(p_dist_up = `p adj (dist.dir.up)`, p_mix_up = `p adj (mix.dir.up)`, p_non_dir = `p adj (non-dir.)`, 
+                  p_mix_down = `p adj (mix.dir.dn)`, p_dist_down = `p adj (dist.dir.dn)`) %>% 
+    gather(Stat, pVal, -Method, -Name) %>% 
+    filter(!is.na(pVal)) %>% 
+    mutate(pVal = ifelse(pVal == 0, min(pVal[pVal != 0]), pVal)) %>% 
+    #filter(pVal != 0) %>% 
+    mutate(pVal = -log10(pVal)) %>% 
+    dplyr::rename(Pathway = Name)
+  
+  df_p2 <- df_p %>% 
+    group_by(Pathway, Stat) %>% 
+    summarise(pVal = mean(pVal, na.rm = TRUE)) %>% 
+    ungroup() %>% 
+    arrange(Pathway)
+  
+  df_gls <- bind_rows(df_gls, tmp_gls %>% mutate(File = i))
+  df_pathways <- bind_rows(df_pathways, df_p2 %>% mutate(File = i))
+  write.csv2(x = df_p2 %>% spread(Stat, pVal), file = file.path(wd, 'Results', 'PianoResults', paste0('GSA_', sub('.rds', '.csv', i))))
+  
+}
+
+df_gls <- df_gls %>%
+  mutate(File = sub('.rds', '', File)) %>%
+  separate(col = File, into = c('Tissue', 'Disease', 'Control'), sep = '_')
+
+write.csv2(x = df_gls, file = file.path(wd, 'Results', 'GLS.csv'))
+
+df_pathways <- df_pathways %>% 
+  mutate(File = sub('.rds', '', File)) %>%
+  separate(col = File, into = c('Tissue', 'Disease', 'Control'), sep = '_')
+
+write.csv2(x = df_pathways, file = file.path(wd, 'Results', 'GSA.csv'))
+
+```
+
+## Differential Expression
+
+```{r CommonGenes, fig.height = 8, fig.width = 8}
+
+tmp_gls <- df_gls %>%
+  filter(Tissue == 'glom', Control == 'tn')
+
+df_genes_r <- tmp_gls %>% 
+  filter(logP > -log10(0.05), abs(logFC) > 1) %>% 
+  mutate(Disease = factor(Disease, levels = c('fsgs', 'fsgs&mcd', 'mcd', 'igan', 'ln', 'mgn', 'dn', 'ht', 'rpgn')))
+
+tmp_genes <- df_genes_r %>% 
+  group_by(TF) %>% 
+  summarise(N = n()) %>% 
+  ungroup() %>% 
+  filter(N > 5)
+
+diseases <- unique(df_genes_r$Disease)
+
+df_genes_r2 <- df_genes_r %>% 
+  filter(TF %in% tmp_genes$TF) %>% 
+  mutate(Disease = plyr::mapvalues(Disease, unique(Disease), seq(1:n_distinct(Disease))), Value = as.numeric(Disease))
+
+df_genes_labs <- data.frame(TF = unique(df_genes_r2$TF)) %>% arrange(TF)
+
+df_genes_labs$ang <- seq(from = (360/nrow(df_genes_labs))/1.5, to = (1.5*(360/nrow(df_genes_labs))) - 360, length.out = nrow(df_genes_labs)) + 80
+df_genes_labs$hjust <- 0
+df_genes_labs$hjust[which(df_genes_labs$ang < -90)] <- 1
+df_genes_labs$ang[which(df_genes_labs$ang < -90)] <- (180 + df_genes_labs$ang)[which(df_genes_labs$ang < -90)]
+df_genes_labs$Value <- 1
+
+library(RColorBrewer)
+
+tmp_p1 <- ggplot(df_genes_r2, aes(x = TF, y = Disease, fill = factor(Value))) +
+  geom_tile(colour = "white") +
+  #scale_fill_gradient(low = "white", high = "steelblue") +
+  #ylim(c(0, max(nba.m$var2) + 0.5)) +
+  scale_y_discrete(breaks = seq_along(unique(diseases)), labels = unique(df_genes_r$Disease)) +
+  coord_polar(theta = "x") + 
+  theme(panel.background = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.y = element_blank()) +#+element_text(size = 7)) +
+  geom_text(data = df_genes_labs, aes(x = TF, y = 10, label = TF, angle = ang, hjust = hjust), size = 2) +
+  theme(legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +# omit plot title saying 'color'
+  #scale_fill_brewer(palette = 2, labels = diseases)
+  scale_fill_manual(values = c("#33a02c", "#a6cee3", "#1f78b4", "black", "#999999", "#ffff99", "#ff7f00", "#6a3d9a", "#b15928"), labels = levels(diseases)) +
+  theme(legend.position = 'none')
+  #ggtitle('Gene Level (N > 5)')
+
+tiff(file.path(wd, 'Results', 'GLS.tiff'), height = 4, width = 4, units = 'in', compression = "lzw", res = 300)
+tmp_p1
+dev.off()
+
+```
+
+```{r CommonPathways, fig.height = 8, fig.width = 16}
+
+tmp_pathways <- df_pathways %>%
+  filter(Tissue == 'glom', Control == 'tn', Stat %in% c('p_dist_up', 'p_dist_down'))
+
+df_pathways_r <- tmp_pathways %>% 
+  filter(pVal > -log10(0.05)) %>% 
+  #mutate(Pathway = abbreviate(sub('.*?_', '', Pathway), 20)) %>% 
+  mutate(Disease = factor(Disease, levels = c('fsgs', 'fsgs&mcd', 'mcd', 'igan', 'ln', 'mgn', 'dn', 'ht', 'rpgn')))
+
+tmp_paths <- df_pathways_r %>% 
+  group_by(Pathway) %>% 
+  summarise(N = n()) %>% 
+  ungroup() %>% 
+  filter(N > 2)
+
+diseases <- setdiff(levels(df_pathways_r$Disease), 'fsgs&mcd')
+
+df_pathways_r2 <- df_pathways_r %>% 
+  filter(Pathway %in% tmp_paths$Pathway) %>% 
+  mutate(Disease = plyr::mapvalues(Disease, levels(Disease), seq(1:n_distinct(levels(Disease)))), Value = as.numeric(Disease))
+
+df_pathways_labs <- data.frame(Pathway = unique(df_pathways_r2$Pathway)) %>% arrange(Pathway)
+
+df_pathways_labs$ang <- seq(from = (360/nrow(df_pathways_labs))/1.5, to = (1.5*(360/nrow(df_pathways_labs))) - 360, length.out = nrow(df_pathways_labs)) + 80
+df_pathways_labs$hjust <- 0
+df_pathways_labs$hjust[which(df_pathways_labs$ang < -90)] <- 1
+df_pathways_labs$ang[which(df_pathways_labs$ang < -90)] <- (180 + df_pathways_labs$ang)[which(df_pathways_labs$ang < -90)]
+df_pathways_labs$Disease <- 1
+
+library(RColorBrewer)
+
+ggplot(df_pathways_r2, aes(x = Disease, y = Pathway, fill = factor(Disease))) + 
+  geom_tile(colour = 'white') +
+  scale_fill_manual(values = c("#33a02c", "#1f78b4", "black", "#999999", "#ffff99", "#ff7f00", "#6a3d9a", "#b15928"), labels = diseases) +
+  theme(legend.position = 'none') + xlab('') + ylab('') + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+tmp_p2 <- ggplot(df_pathways_r2, aes(x = Pathway, y = Disease, fill = factor(Disease))) +
+  geom_tile(colour = "white") +
+  #scale_fill_gradient(low = "white", high = "steelblue") +
+  #ylim(c(0, max(nba.m$var2) + 0.5)) +
+  scale_y_discrete(breaks = seq_along(unique(diseases)), labels = unique(df_pathways_r2$Disease)) +
+  coord_polar(theta = "x") + 
+  theme(panel.background = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.y = element_blank()) +#+element_text(size = 7)) +
+  geom_text(data = df_pathways_labs, aes(x = Pathway, y = 9, label = Pathway, angle = ang, hjust = hjust), size = 1) +
+  theme(legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +# omit plot title saying 'color'
+  #scale_fill_brewer(palette = 2, labels = diseases)
+  scale_fill_manual(values = c("#33a02c", "#1f78b4", "black", "#999999", "#ffff99", "#ff7f00", "#6a3d9a", "#b15928"), labels = diseases) +
+  theme(legend.position = 'none')
+
+tiff(file.path(wd, 'Results', 'Piano.tiff'), height = 5, width = 5, units = 'in', compression = "lzw", res = 300)
+tmp_p2
+dev.off()
+
+```
+
+```{r PlotPathways, fig.width = 8}
+
+n_pathways <- tmp_pathways %>% filter(pVal > -log10(0.05))
+pathways_coherent <- table(n_pathways[c('Pathway', 'Stat')]) %>% as.data.frame() %>% spread(Stat, Freq) %>% mutate(lUP = ifelse(p_dist_up > 0, 1, 0), lDOWN = ifelse(p_dist_down > 0, 1, 0), N = p_dist_down + p_dist_up, lN = lUP + lDOWN)
+pathways_disease <- table(n_pathways[c('Disease', 'Stat')]) %>% as.data.frame() %>% spread(Stat, Freq) %>% mutate(N = p_dist_up + p_dist_down)
+pathways_common <- df_pathways_r2 %>% mutate(Disease = plyr::mapvalues(Disease, sort(unique(Value)), diseases)) %>% group_by(Disease) %>% summarise(N = n())
+
+#metabolic pathways
+metab_pathways <- tmp_pathways %>%
+  filter(grepl('METABOL', Pathway), pVal > -log10(0.05))
+
+metab_up <- table(filter(metab_pathways, Stat == 'p_dist_up')[c('Pathway', 'Disease')]) %>%
+  as.data.frame() %>% 
+  dplyr::rename(UP = Freq)
+
+metab_down <- table(filter(metab_pathways, Stat == 'p_dist_down')[c('Pathway', 'Disease')]) %>%
+  as.data.frame() %>% 
+  dplyr::rename(DOWN = Freq)
+
+metab_all <- metab_up %>% 
+  full_join(metab_down) %>% 
+  mutate(UP = ifelse(is.na(UP), 0, UP), DOWN = ifelse(is.na(DOWN), 0, DOWN)) %>% 
+  mutate(Freq = UP - DOWN) %>% 
+  dplyr::select(-UP, -DOWN) %>% 
+  spread(Disease, Freq, fill = 0) %>% 
+  mutate(fsgs = 0, rpgn = 0, `fsgs&mcd` = 0) %>% 
+  gather(Disease, Value, -Pathway) %>% 
+  mutate(Disease = ifelse(Disease == 'ht', 'hn', Disease)) %>% 
+  mutate(Disease = factor(Disease, levels = c('fsgs', 'fsgs&mcd', 'mcd', 'igan', 'ln', 'mgn', 'dn', 'hn', 'rpgn')),
+         Value = plyr::mapvalues(Value, from = c(-1, 0, 1), to = c('Down-regulated', 'No-significant', 'Up-regulated'))) %>% 
+  #filter(Value != 'No-significant') %>% 
+  mutate(Pathway = sub('.*?_', '', Pathway))
+
+tmp_p1 <- ggplot(metab_all, aes(Disease, Pathway, fill = Value)) +
+  geom_tile(color = "white") +
+  labs(x = NULL, y = NULL, title = NULL) +
+  theme_tufte(base_family = "Helvetica") +
+  #scale_y_discrete(label = function(x) abbreviate(x, minlength = 40)) +
+  theme(axis.ticks = element_blank(), axis.text.y = element_text(size = 8), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(values = c('firebrick', 'white', 'forestgreen'))#[unique(metab_all$Value)], labels = c('Up-regulated', drugs[unique(tmp_pathways$Value)])
+
+pdf(file.path(wd, 'Results', 'PianoMetabPathways.pdf'), height = 6, width = 8)#, units = 'in', compression = "lzw", res = 300)
+tmp_p1
+dev.off()
+
+```
+
+
+```{r TNvHLD, fig.height = 6, fig.width = 8, eval=FALSE}
+
+tmp_gls <- df_gls %>% 
+  filter(Tissue == 'glom', Disease == 'tn', Control == 'hld')
+
+tmp_genes <- tmp_gls %>% 
+  mutate(logP = -log10(adj.P.Val)) %>% 
+  mutate(Status = ifelse(abs(logFC) < 1 | logP < -log10(0.05), 'Undifferentiated', 'Differentiated'))
+
+most_expressed <- tmp_genes %>% 
+  top_n(sqrt(logFC^2*logP^2), n = 10) %>% 
+  ungroup()
+
+library(ggrepel)
+
+ggplot(tmp_genes, aes(logFC, logP, colour = Status)) +
+  geom_point() +
+  geom_label_repel(data = most_expressed, aes(logFC, logP, label = TF, hjust = 1)) +
+  ggtitle('Volcano Plot (TNvHLD)') +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = 'none')
+
+tmp_pathways <- df_pathways %>% 
+  filter(Tissue == 'glom', Disease == 'tn', Control == 'hld') %>% 
+  filter(Stat != 'p_mix_up', Stat != 'p_mix_down') %>% 
+  mutate(Pathway = sub('.*?_', '', Pathway))
+
+tmp_paths <- tmp_pathways %>% 
+  group_by(Stat) %>% 
+  top_n(n = 10, pVal) %>% 
+  ungroup()
+
+tmp_plot <- tmp_pathways %>% 
+  filter(Pathway %in% tmp_paths$Pathway) %>% 
+  spread(Stat, pVal)
+
+paths <- (tmp_plot %>% arrange(p_dist_up))$Pathway
+
+tmp_plot <- tmp_plot %>% 
+  gather(Stat, logP, -Pathway, -Tissue, -Disease, -Control) %>% 
+  mutate(Pathway = factor(Pathway, levels = paths)) %>% 
+  mutate(Stat = factor(Stat, levels = c('p_dist_up', 'p_non_dir', 'p_dist_down')))
+
+ggplot(tmp_plot, aes(Stat, Pathway, fill = logP)) +
+  geom_tile(color = "white", size = 0.1) +
+  scale_fill_viridis(name = "-log10(P-Value)", begin = 0, end = 1) +
+  coord_equal() +
+  labs(x = NULL, y = NULL, title = 'Top Affected Pathways (TNvHLD)') +
+  #scale_y_discrete(label = function(x) abbreviate(x, minlength = 40)) +
+  theme_tufte(base_family = "Helvetica") +
+  theme(axis.ticks = element_blank(), axis.text = element_text(size = 6), axis.text.x = element_text(angle = 90, hjust = 1), plot.title = element_text(hjust = 0.5))
+
+```
+
